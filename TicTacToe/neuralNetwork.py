@@ -8,19 +8,20 @@ Created on Sun Jan  7 21:17:30 2018
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-from numba import jit
+from numba import jit,njit
 
 
 
 class NeuralNetwork:
     def __init__(self,featureSize,hiddenLayerSize,outputSize,
                  activationFunctionClass="sigmoid",
-                 errorFunction="euclidDistance"):
+                 errorFunction="euclidDistance",bias=False):
         
         self.featureSize = featureSize
         self.hiddeLayerSize = hiddenLayerSize
-        self.ourputSize = outputSize
+        self.outputSize = outputSize
         self.perceptron = False
+        self.biasNumber = int(bias)
         
         if isinstance(activationFunctionClass,str):
             if activationFunctionClass == "sigmoid":
@@ -62,12 +63,12 @@ class NeuralNetwork:
             
         
         if isinstance(hiddenLayerSize,list) or isinstance(hiddenLayerSize,np.ndarray):
-            self.weights = self.makeWeightsFromList()
+            self.weights,self.bias = self.makeWeightsFromList()
         elif isinstance(hiddenLayerSize,tuple):
             if hiddenLayerSize[0] == 0 or hiddenLayerSize[1] == 0:
-                self.weights = self.makePerceptron()
+                self.weights,self.bias = self.makePerceptron()
             else:
-                self.weights = self.makeWeightsFromTuple()
+                self.weights,self.bias = self.makeWeightsFromTuple()
             
         else:
             print("The hidden layer size was given in an unknown way, \
@@ -81,46 +82,64 @@ class NeuralNetwork:
         Size: (input,output)
         """
         weights = []
+        bias = []
         weights.append(np.random.normal(size=(self.featureSize,self.hiddeLayerSize[0])))
+        bias.append(np.ones(self.hiddeLayerSize[0])*self.biasNumber)
+        
         
         for i in range(1,range(self.hiddeLayerSize)):
             weights.append(np.random.normal(size=(self.hiddeLayerSize[i-1],self.hiddeLayerSize[i])))
+            bias.append(np.ones(self.hiddeLayerSize[i])*self.biasNumber)
         
-        weights.append(np.random.normal(size=(self.hiddeLayerSize[-1],self.ourputSize)))
+        weights.append(np.random.normal(size=(self.hiddeLayerSize[-1],self.outputSize)))
+        bias.append(np.ones(self.outputSize)*self.biasNumber)
         
-        return weights
+        return weights,bias
     
     def makeWeightsFromTuple(self):
         weights = []
+        bias = []
         weights.append(np.random.normal(size=(self.featureSize,self.hiddeLayerSize[1])))
+        bias.append(np.ones(self.hiddeLayerSize[0])*self.biasNumber)
+        
         for i in range(1,self.hiddeLayerSize[0]):
             
             weights.append(np.random.normal(size=(self.hiddeLayerSize[i-1],self.hiddeLayerSize[i])))
-        
+            bias.append(np.ones(self.hiddeLayerSize[i])*self.biasNumber)
        
-        weights.append(np.random.normal(size=(self.hiddeLayerSize[1],self.ourputSize)))
+        weights.append(np.random.normal(size=(self.hiddeLayerSize[1],self.outputSize)))
+        bias.append(np.ones(self.outputSize)*self.biasNumber)
         
-        return weights
+        return weights,bias
     
     
     def makePerceptron(self):
         self.perceptron = True
-        return [np.random.normal(size=(self.featureSize,self.ourputSize))]
+        bias = [np.ones(self.outputSize)*self.biasNumber]
+        return [np.random.normal(size=(self.featureSize,self.outputSize))],bias
  
-    @jit
+    
     def forwardPropagate(self,feature):
+        activFunc = njit(self.activFunc)
+        bias = self.bias
+        weights = self.weights
+        
+        #@jit(nopython=True)
+        def forProg(f):
+        
+            nextNodes = activFunc(np.dot(weights[0].T,f) + bias[0])
+            
+            for i in range(1,len(weights)):
+                nextNodes = activFunc(np.dot(weights[i].T,nextNodes)+ bias[i])
 
-        nextNodes = self.activFunc(np.dot(self.weights[0].T,feature))
-        
-        for i in range(1,len(self.weights)):
-            nextNodes = self.activFunc(np.dot(self.weights[i].T,nextNodes))
-        
-        return nextNodes
+            return nextNodes
+    
+        return forProg(feature)
     
     def makeAndGate(self):
         self.featureSize = 2
         self.ourputSize = 1
-        self.weights = self.makePerceptron()
+        self.weights, self.bias = self.makePerceptron()
         self.weights[0] = np.array([0.6,.6])
         self.activFunc = self.floor
         
@@ -129,7 +148,7 @@ class NeuralNetwork:
         self.featureSize = 2
         self.ourputSize = 1
         self.hiddeLayerSize = (1,2)
-        self.weights = self.makeWeightsFromTuple()
+        self.weights,self.bias = self.makeWeightsFromTuple()
         
         
         self.weights[0] = np.array([[.6,1.1],[.6,1.1]])
