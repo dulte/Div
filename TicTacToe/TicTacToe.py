@@ -87,8 +87,9 @@ class TicTacToe:
                 return(board[2][2])
 
         return 0
-
-
+    
+    def getLastPlay(self):
+        return self.playerMoves[self.playerMoves][0]
 
 
     def drawBoard(self, clearScreen = False):
