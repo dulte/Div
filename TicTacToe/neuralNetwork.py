@@ -179,10 +179,10 @@ class NeuralNetwork:
         numBiases = len(self.bias)
         
         for i in range(1,len(weightError)):
-            d[i] = np.dot(reversedNodes[i-1].T,d[i-1])*\
+            d[i] = np.dot(d[i-1].T,reversedNodes[i-1])*\
                    self.activFuncDot(reversedNodes[i])
         
-            weightError[i] = np.dot(reversedNodes[i+1].T,d[i])
+            weightError[i] = np.dot(d[i].T,reversedNodes[i+1])
             biasError[i] = d[i]
         
         for i, error in enumerate(weightError):
@@ -309,7 +309,7 @@ def testBackPropagationWithXor():
     outputs = np.array([[0],[1],[1],[0]])
     eps = 1e-6
 
-    for i in range(10000):
+    for i in range(100):
         result = nn.forwardPropagate(features)
         print("------------------")
         print(result)
