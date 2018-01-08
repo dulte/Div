@@ -98,12 +98,13 @@ class NeuralNetwork:
         bias.append(np.ones(self.hiddeLayerSize[0])*self.biasNumber)
 
 
-        for i in range(1,range(self.hiddeLayerSize)):
+        for i in range(1,len(self.hiddeLayerSize)):
             weights.append(np.random.normal(size=(self.hiddeLayerSize[i-1],self.hiddeLayerSize[i])))
             bias.append(np.ones(self.hiddeLayerSize[i])*self.biasNumber)
 
         weights.append(np.random.normal(size=(self.hiddeLayerSize[-1],self.outputSize)))
         bias.append(np.ones(self.outputSize)*self.biasNumber)
+        
 
         return weights,bias
 
@@ -111,16 +112,17 @@ class NeuralNetwork:
         weights = []
         bias = []
         weights.append(np.random.normal(size=(self.featureSize,self.hiddeLayerSize[1])))
-        bias.append(np.ones(self.hiddeLayerSize[0])*self.biasNumber)
+        bias.append(np.ones(self.hiddeLayerSize[1])*self.biasNumber)
 
         for i in range(1,self.hiddeLayerSize[0]):
 
             weights.append(np.random.normal(size=(self.hiddeLayerSize[i-1],self.hiddeLayerSize[i])))
-            bias.append(np.ones(self.hiddeLayerSize[i])*self.biasNumber)
+            bias.append(np.ones(self.hiddeLayerSize[1])*self.biasNumber)
 
         weights.append(np.random.normal(size=(self.hiddeLayerSize[1],self.outputSize)))
         bias.append(np.ones(self.outputSize)*self.biasNumber)
-
+        
+        
         return weights,bias
 
 
@@ -144,38 +146,54 @@ class NeuralNetwork:
 
 
     def forwardPropagate(self,feature):
-        #nextNodes = self.activFunc(np.dot(self.weights[0].T,feature) + self.bias[0])
         nextNodes = self.activFunc(np.dot(feature,self.weights[0]) + self.bias[0])
         self.nodes[0] = np.array(feature)
 
         for i in range(1,len(self.weights)):
             self.nodes[i] = nextNodes
-            nextNodes = self.activFunc(np.dot(nextNodes,self.weights[i])+ self.bias[i])
+            nextNodes = self.activFunc(np.dot(nextNodes,self.weights[i])\
+                                                               + self.bias[i])
 
         self.nodes[-1] = nextNodes
-        return nextNodes
+        return np.array(nextNodes)
 
 
 
     def backPropagate(self,output,real):
-        nodeError = copy(self.weights)
+        weightError = self.weights[:]
+        weightError.reverse()
+        d = self.weights[:]
+        d.reverse()
+        biasError = self.bias[:]
+        biasError.reverse()
+                
         reversedNodes = self.nodes[:]
         reversedNodes.reverse()
+        d[0] = self.errorFuncDot(output,real)*\
+                                 self.activFuncDot(reversedNodes[0])
+        
+        weightError[0] = np.dot(reversedNodes[1].T,d[0])
+        biasError[0] = d[0]
+        
+        numWeights = len(self.weights)
+        numBiases = len(self.bias)
+        
+        for i in range(1,len(weightError)):
+            d[i] = np.dot(reversedNodes[i-1].T,d[i-1])*\
+                   self.activFuncDot(reversedNodes[i])
+        
+            weightError[i] = np.dot(reversedNodes[i+1].T,d[i])
+            biasError[i] = d[i]
+        
+        for i, error in enumerate(weightError):
+            self.weights[numWeights-i-1] -= np.array(error)
+        
+        if self.biasNumber:
+            for i,biasErrors in enumerate(biasError):
+                for j,biasErr in enumerate(biasErrors):
+                    self.bias[numBiases-i-1] -= biasErr
+        
 
-        d_L = self.errorFuncDot(output,real)*self.activFuncDot(self.nodes[-1])
-        nodeError[0] = np.dot(reversedNodes[1].T,d_L)
-        for i in range(1,len(self.weights)):
-            nodeError[i] = np.dot(reversedNodes[i+1].T,d_L)*\
-                            self.activFuncDot(reversedNodes[i])
-
-        print(nodeError)
-
-        for i, error in enumerate(nodeError):
-            if not isinstance(error,np.ndarray):
-                self.weights[i][0] -= error
-            else:
-                print(self.weights[i],np.array(error))
-                self.weights[i] -= np.array(error)
 
 
 
@@ -226,11 +244,17 @@ class NeuralNetwork:
     def ceil(self,x):
         return np.ceil(x)
 
-    def euclidDistance(self,guess,real,axis=0):
-        return 1./(2*real.shape[axis])*np.sum((real-guess)**2,axis=axis)
+    def euclidDistance(self,guess,real,axis=2):
+        try:
+            return 1./(2*real.shape[axis])*np.sum((real-guess)**2,axis=axis)
+        except:
+            return 1/2.*(real-guess)**2
 
-    def euclidDistanceDot(self,guess,real,axis=0):
-        return -1./real.shape[axis]*np.sum((real-guess),axis=axis)
+    def euclidDistanceDot(self,guess,real,axis=2):
+        try:
+            return -1./real.shape[axis]*np.sum((real-guess),axis=axis)
+        except:
+            return -(real-guess)
 
     def difference(self,guess,real,axis=0):
         return 1./real.shape[axis]*np.sum((real-guess),axis=axis)
@@ -269,7 +293,6 @@ def testBackPropagation():
     features = [1]
     for i in range(10):
         result = nn.forwardPropagate(features)
-        print(result)
         nn.backPropagate(result,real)
 
     expectedWeights = np.array([0])
@@ -278,16 +301,17 @@ def testBackPropagation():
 
 def testBackPropagationWithXor():
     nn = NeuralNetwork(2,(1,2),1)
-    nn.makeXorGate()
-    nn.weights[0] = np.array([[.3,4.1],[.1,1.5]])
-    nn.weights[1] = np.array([8,-2])
+    #nn.makeXorGate()
+    #nn.weights[0] = np.array([[.3,4.1],[.1,1.5]])
+    #nn.weights[1] = np.array([8,-2])
 
-    features = [[0,0],[1,0],[0,1],[1,1]]
-    outputs = np.array([0,1,1,0])
+    features = np.array([[0,0],[1,0],[0,1],[1,1]])
+    outputs = np.array([[0],[1],[1],[0]])
     eps = 1e-6
 
-    for i in range(10):
+    for i in range(10000):
         result = nn.forwardPropagate(features)
+        print("------------------")
         print(result)
         nn.backPropagate(result,outputs)
 
@@ -295,6 +319,15 @@ def testBackPropagationWithXor():
 
 
 if __name__=="__main__":
-    testNNWithANDGate()
-    testNNWithXORGate()
+#    testNNWithANDGate()
+#    testNNWithXORGate()
     testBackPropagationWithXor()
+
+#    nn = NeuralNetwork(1,[3,2],1)
+#    
+#    print(nn.weights)
+#
+#    
+#    i = np.array([[1],[0]])
+#    result = nn.forwardPropagate(i)
+#    print(result)
