@@ -10,7 +10,7 @@ class TicTacToeAI:
         try:
             self.synaps = np.load("layers_%s_" %(layers) + filename )
             self.bias = np.load("layers_%s_" %(layers) + "bias_" + filename )
-            print self.bias
+            print(self.bias)
         except:
             self.synaps = np.random.normal(0,sigma, (layers, 9,9))
             self.bias = np.random.normal(0,sigma,(layers,9))
@@ -67,7 +67,7 @@ class TicTacToeAI:
             indexBestChild = np.argsort(self.score)[-1]
 
             self.highscore[i] = self.score[indexBestChild]
-            print self.score[indexBestChild]
+            print(self.score[indexBestChild])
 
             if savePerCycle:
                 np.save("layers_%s_" %(self.layers) + self.filename ,self.synaps[indexBestChild,:,:,:])
@@ -75,8 +75,8 @@ class TicTacToeAI:
             if not(i == self.cycles - 1):
                 self.makeChilderen(self.synaps[indexBestChild,:,:,:],self.bias[indexBestChild,:,:])
 
-            print "Done with Cycle %s" %i
-            print "############################"
+            print("Done with Cycle %s" %i)
+            print("############################")
 
         # np.save(self.filename,self.synaps[indexBestChild,:,:,:])
         # np.save("bias_" + self.filename,self.bias[indexBestChild,:,:])
@@ -217,13 +217,13 @@ class TicTacToeAI:
                     game.makeMove(move)
                     break
             else:
-                print "The AI could not find a valide move! Train it more!"
+                print("The AI could not find a valide move! Train it more!")
 
             game.drawBoard()
 
             winner = game.checkWinner()
             if winner:
-                print "Player %s won" %(int(winner))
+                print("Player %s won" %(int(winner)))
                 break
 
     def playAiAgainstAi(self):
@@ -238,12 +238,12 @@ class TicTacToeAI:
                     game.makeMove(move)
                     break
             else:
-                print "The AI could not find a valide move! Train it more!"
+                print("The AI could not find a valide move! Train it more!")
 
 
             winner = game.checkWinner()
             if winner:
-                print "Player %s won" %(int(winner))
+                print("Player %s won" %(int(winner)))
                 break
 
 
@@ -254,13 +254,13 @@ class TicTacToeAI:
                     game.makeMove(move)
                     break
             else:
-                print "The AI could not find a valide move! Train it more!"
+                print("The AI could not find a valide move! Train it more!")
 
             game.drawBoard()
 
             winner = game.checkWinner()
             if winner:
-                print "Player %s won" %(int(winner))
+                print("Player %s won" %(int(winner)))
                 break
 
 
@@ -289,4 +289,4 @@ if __name__ == "__main__":
         elif sys.argv[1] == "train":
             ai.trainAI(plotScore = True)
     except:
-        print "No choice was made."
+        print("No choice was made.")
