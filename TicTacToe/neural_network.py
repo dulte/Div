@@ -32,7 +32,10 @@ class NeuralNetwork:
         self.activations[0] = feature
 
         for i in range(len(self.weights)):
-            node = np.dot(self.weights[i].T,activation) + self.biases[i]
+            print(self.weights[i])
+            node = np.dot(self.weights[i],activation)# + self.biases[i]
+            print(node)
+            print("hei")
             self.nodes[i] = node
 
             activation = self.activation_function(node)
@@ -45,17 +48,24 @@ class NeuralNetwork:
         nabla_b = [np.zeros(b.shape) for b in self.biases]
 
         delta = self.cost_prime(output,real)*self.activation_function_prime(self.nodes[-1])
+        delta = delta.reshape(delta.shape[0],1)
+        
         nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta,self.activations[-2].transpose())
+        nabla_w[-1] = np.dot(delta,self.activations[-2].T)
+        
+        
+        
+        print(nabla_w[-1].shape,self.weights[-1].shape)
 
         for l in range(2,self.number_of_layers):
-            z = nodes[-l]
+            z = self.nodes[-l]
 
-            delta = np.dot(self.weights[-l+1].transpose(),delta)*\
-                    activation_function_prime(z)
+            delta = np.dot(self.weights[-l+1].T,delta)*\
+                    self.activation_function_prime(z)
 
             nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(delta,self.activations[-l-1].transpose())
+            nabla_w[-l] = np.dot(delta,self.activations[-l-1].T)
+
 
         return nabla_w,nabla_b
 
@@ -104,6 +114,7 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
     nn = NeuralNetwork([2,2,1])
+#    inputs = [[[0],[0]],[[1],[1]],[[1],[0]],[[0],[1]]]
     inputs = [[0,0],[1,1],[1,0],[0,1]]
     outputs = [[0],[0],[1],[1]]
     training_data = [inputs,outputs]
